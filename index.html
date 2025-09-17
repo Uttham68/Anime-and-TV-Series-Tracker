@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BingeHub</title>
+    <link rel="icon" type="image/png" href="/files/Tab.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        }
+        body.dark {
+            background-color: #020617; /* slate-950 */
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+            background-size: 2rem 2rem;
+        }
+        body:not(.dark) {
+            background-color: #f8fafc; /* slate-50 */
+            background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0);
+            background-size: 2rem 2rem;
+        }
+        .font-dancing-script {
+            font-family: 'Dancing Script', cursive;
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            transform: translateY(-50px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal-backdrop.active .modal-content {
+            transform: translateY(0);
+        }
+        /* Custom scrollbar for tab navigation on mobile */
+        .mobile-tab-nav::-webkit-scrollbar {
+            height: 2px;
+        }
+        .mobile-tab-nav::-webkit-scrollbar-thumb {
+            border-radius: 20px;
+        }
+        /* Styles for the scrolled header state */
+        #sticky-tabs-container {
+            transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
+            max-height: 0;
+        }
+        /* --- User Request: Add background blur when modal is open --- */
+        body.modal-open > *:not(.modal-backdrop) {
+            filter: blur(4px);
+            transition: filter 0.3s ease-in-out;
+            pointer-events: none; /* Prevent interaction with blurred background */
+        }
+        /* --- End of modification --- */
+        /* --- User Request: Add smooth transition for scrolled header --- */
+        header {
+            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
+            /* For light mode */
+            background-color: transparent !important; /* Use !important to override tailwind */
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+        }
+        .dark header {
+            background-color: transparent !important; /* bg-slate-900 with opacity */
+        }
+        /* --- End of modification --- */
+        /* --- User Request: Add fade-in animation for cards --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .card-animated {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0; /* Start as invisible */
+        }
+        .social-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: #e11d48; /* rose-600 */
+        }
+        /* --- Card Hover Effect --- */
+        .card-hover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            text-align: center;
+            pointer-events: none;
+        }
+        .group:hover .card-hover-overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* --- End of modification --- */
+        /* --- Spoiler Protection --- */
+        .spoiler {
+            background-color: #374151;
+            color: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .spoiler:hover, .spoiler.revealed { background-color: transparent; color: inherit; }
+
+    </style>
+</head>
+<html lang="en" class="dark">
+<body class="dark text-gray-900 dark:text-gray-200 transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40">
+        <div class="container mx-auto px-6">
+            <nav class="py-3 flex justify-between items-center">
+                <div class="flex items-center gap-4 min-w-0">
+                    <a href="slo.html" id="logo-link" class="flex items-center gap-2 flex-shrink-0 transition-transform duration-300 ease-in-out">
+                        <img src="/files/Tab.png" alt="BingeHub Logo" class="h-10 w-auto sm:h-11 transition-transform hover:scale-105">
+                        <span class="font-dancing-script text-4xl sm:text-5xl font-bold text-rose-600 dark:text-rose-400 hidden sm:inline transition-transform hover:scale-105">BingeHub</span>
+                    </a>
+                    <!-- Sticky Tabs Placeholder -->
+                    <div id="sticky-tabs-container" class="hidden lg:flex items-center overflow-hidden opacity-0 flex-grow min-w-0">
+                        <!-- Cloned tabs will be inserted here by JS -->
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 flex-shrink-0">
+                    <div class="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800/60 rounded-full p-1">
+                        <div id="search-container" class="relative flex items-center transition-all duration-300">
+                             <div id="search-input-wrapper" class="relative flex-grow transition-all duration-300 max-w-0 overflow-hidden">
+                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                     <i class="fas fa-search text-gray-400"></i>
+                                 </span>
+                                 <input type="text" id="search-input" class="w-full py-1.5 pl-10 pr-4 text-gray-700 bg-transparent border-transparent rounded-full dark:text-gray-300 focus:outline-none focus:ring-0 transition-all duration-300" placeholder="Search...">
+                             </div>
+                             <button id="search-icon-btn" class="flex items-center justify-center w-9 h-9 bg-transparent dark:bg-transparent rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700/50" title="Search">
+                                 <i class="fas fa-search"></i>
+                             </button>
+                        </div>
+                        <button id="login-btn" class="px-4 py-1.5 text-sm font-semibold text-rose-600 bg-white dark:bg-gray-900 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 flex-shrink-0">
+                            Login
+                        </button>
+                    </div>
+                    <div id="sticky-add-btn-container" class="ml-2 overflow-hidden opacity-0 transition-opacity duration-300" style="max-width: 0;">
+                        <!-- Cloned button will be inserted here by JS -->
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Hero Section -->
+        <section class="text-center mb-10">
+            <h1 class="font-dancing-script text-5xl sm:text-6xl md:text-7xl font-bold mb-4">Your Ultimate Anime & TV Tracker</h1>
+            <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-8">Track your shows, get stats, and receive AI recommendations, all in one place.</p>
+        </section>
+
+        
+        
+        <!-- Tabs & Controls -->
+        <div id="main-tabs-wrapper" class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div id="main-tabs-container" class="w-full overflow-x-auto mobile-tab-nav flex justify-between items-center bg-gray-100 dark:bg-gray-800/60 rounded-full p-1 transition-opacity duration-300">
+                <nav class="flex-grow flex space-x-1" aria-label="Tabs">
+                    <a href="#" class="tab-item active-tab whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 bg-white dark:bg-gray-900 text-rose-600" data-tab="all">All <span id="count-all" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                    <a href="#" class="tab-item whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/50" data-tab="watching">Watching <span id="count-watching" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                    <a href="#" class="tab-item whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/50" data-tab="completed">Completed <span id="count-completed" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                    <a href="#" class="tab-item whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/50" data-tab="on-hold">On Hold <span id="count-on-hold" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                    <a href="#" class="tab-item whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/50" data-tab="dropped">Dropped <span id="count-dropped" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                    <a href="#" class="tab-item whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/50" data-tab="watchlist">Watchlist <span id="count-watchlist" class="text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">0</span></a>
+                </nav>
+                <button id="add-show-btn" class="ml-2 pl-3 pr-4 py-1.5 text-sm font-semibold text-white bg-rose-600 rounded-full hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 flex items-center justify-center gap-2 flex-shrink-0">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Add to list</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Discover Sub-Tabs (only for 'All' view) -->
+        <div id="discover-submenu" class="mb-6 flex justify-center items-center gap-4">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <nav class="flex space-x-1 bg-gray-200 dark:bg-gray-700/50 rounded-full p-1" aria-label="Discover Tabs">
+                    <a href="#" class="discover-tab-item active-discover-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-colors bg-white dark:bg-gray-900 text-rose-600" data-discover="anime">Anime</a>
+                    <a href="#" class="discover-tab-item whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50" data-discover="tv">TV Series</a>
+                </nav>
+            </div>
+            <button id="discover-refresh-btn" class="text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors self-center" title="Refresh Discover">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <!-- Genre Chips (only for 'All' view) -->
+        <div id="genre-chips-section" class="mb-8 hidden">
+            <div id="genre-chips-container" class="genre-chips-container flex items-center gap-2 overflow-x-auto pb-2">
+                <!-- Genre chips will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Anime/TV Grid -->
+        <div id="anime-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            <!-- Dynamic content will be injected here -->
+        </div>
+
+        <!-- Pagination for Discover View -->
+        <div id="pagination-controls" class="mt-8 flex justify-center items-center gap-4 hidden">
+            <button id="prev-page-btn" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Previous
+            </button>
+            <span id="page-indicator" class="text-lg font-semibold text-gray-700 dark:text-gray-300">Page 1</span>
+            <button id="next-page-btn" class="px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center">
+                Next <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+
+        <!-- AI Recommendations -->
+        <section class="mt-16">
+            <h2 class="font-dancing-script text-4xl font-bold mb-6 flex items-center justify-between">
+                <span class="flex items-center">
+                    <i class="fas fa-robot text-cyan-400 mr-3 text-3xl"></i> AI Recommendations
+                </span>
+                <button id="recommend-refresh-btn" class="text-xl px-3 py-1 rounded hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors" title="Refresh Recommendations">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </h2>
+            <div id="recommendations-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <!-- AI recommendations will be injected here -->
+            </div>
+        </section>
+
+        <!-- Currently Airing -->
+        <section class="mt-16">
+            <h2 class="font-dancing-script text-4xl font-bold mb-6 flex items-center justify-between">
+                <span class="flex items-center">
+                    <i class="fas fa-satellite-dish text-green-400 mr-3 text-3xl"></i> Currently Airing
+                </span>
+                <button id="airing-refresh-btn" class="text-xl px-3 py-1 rounded hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors" title="Refresh Airing Shows">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </h2>
+            <div id="airing-now-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <!-- Currently Airing shows will be injected here -->
+            </div>
+        </section>
+
+        <!-- Popular TV Shows -->
+        <section class="mt-16">
+            <h2 class="font-dancing-script text-4xl font-bold mb-6 flex items-center justify-between">
+                <span class="flex items-center">
+                    <i class="fas fa-tv text-blue-400 mr-3 text-3xl"></i> Popular TV Shows
+                </span>
+                <button id="tv-refresh-btn" class="text-xl px-3 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="Refresh TV Shows">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </h2>
+            <div id="tv-shows-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <!-- Popular TV shows will be injected here -->
+            </div>
+        </section>
+
+        <!-- Spacer -->
+        <div class="mt-16"></div>
+
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-slate-100 dark:bg-gray-900/80 mt-24 border-t border-gray-200 dark:border-gray-800">
+        <div class="container mx-auto px-6 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center md:text-left">
+                <!-- Column 1: Brand & Copyright -->
+                <div class="flex flex-col items-center md:items-start">
+                    <a href="slo.html" class="flex items-center gap-2 mb-4">
+                        <img src="/S/files/Tab.png" alt="BingeHub Logo" class="h-10 w-auto">
+                        <span class="font-dancing-script text-3xl font-bold text-rose-600 dark:text-rose-400">BingeHub</span>
+                    </a>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">&copy; 2025 BingeHub. All Rights Reserved.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Designed & Developed with <i class="fas fa-heart text-red-500"></i> by Uttham.</p>
+                </div>
+
+                <!-- Column 2: Contact Info -->
+                <div>
+                    <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Contact Us</h4>
+                    <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                        <li class="flex items-center justify-center md:justify-start gap-2"><i class="fas fa-map-marker-alt fa-fw"></i>Road No.5, Jubilee Hills, Hyderabad, Telangana, India</li>
+                        <li class="flex items-center justify-center md:justify-start gap-2"><i class="fas fa-phone fa-fw"></i> +91 9876543210</li>
+                        <li class="flex items-center justify-center md:justify-start gap-2"><i class="fas fa-envelope fa-fw"></i> <a href="mailto:contact@bingehub.com" class="hover:text-rose-500">contact@bingehub.com</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Column 4: Social Media -->
+                <div>
+                    <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Follow Us</h4>
+                    <div class="flex items-center justify-center md:justify-start gap-5">
+                        <a href="https://github.com/Uttham68" target="_blank" rel="noopener noreferrer" class="text-gray-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors" title="GitHub"><i class="fab fa-github fa-lg"></i></a>
+                        <a href="www.linkedin.com/in/utthamporandla" target="_blank" rel="noopener noreferrer" class="text-gray-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors" title="LinkedIn"><i class="fab fa-linkedin-in fa-lg"></i></a>
+                        <a href="https://www.instagram.com/uttham.p?igsh=MThmb3MyMWphMmJiMQ==" target="_blank" rel="noopener noreferrer" class="text-gray-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors" title="Instagram"><i class="fab fa-instagram fa-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Column 3: FeedBack -->
+                <div class="lg:col-span-1">
+                    <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Send Feedback</h4>
+                    <form id="footer-feedback-form">
+                        <textarea id="footer-feedback-message" rows="2" class="w-full px-3 py-2 text-sm bg-gray-200 dark:bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500" placeholder="Your thoughts..."></textarea>
+                        <button type="submit" class="w-full mt-2 px-4 py-2 text-sm font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Add/Edit Show Modal -->
+    <div id="show-modal" class="modal-backdrop">
+        <div class="modal-content bg-white dark:bg-gray-900/80 dark:backdrop-blur-sm border dark:border-gray-700/50 rounded-xl shadow-2xl w-full max-w-4xl mx-4">
+            <div class="p-8 relative">
+                <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-200" title="Close modal">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+
+                <form id="show-form">
+                    <input type="hidden" id="show-id">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                        <!-- Left Column: Image Preview -->
+                        <div class="md:col-span-4 flex flex-col items-center">
+                            <img id="show-img-preview" src="https://placehold.co/400x600/1F2937/E5E7EB?text=Enter+Title" alt="Show Preview" class="w-full h-auto object-cover rounded-lg shadow-md mb-2">
+                            <input type="url" id="show-img-url" class="block w-full px-4 py-2 text-xs bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Or paste Image URL...">
+                        </div>
+
+                        <!-- Right Column: Form Fields -->
+                        <div class="md:col-span-8 flex flex-col">
+                            <h3 id="modal-title" class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Add to Your List</h3>
+                            <div class="space-y-4 flex-grow">
+                                <div class="relative">
+                                    <i class="fas fa-heading absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    <input type="text" id="show-title" class="block w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Search Title (e.g., Jujutsu Kaisen)" required>
+                                    <div id="search-results" class="relative"></div>
+                                </div>
+                                <div class="relative">
+                                    <i class="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                    <input type="url" id="show-href" class="block w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Streaming Link (e.g., Crunchyroll URL)">
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="number" id="episodes-watched" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Episodes Watched" value="0">
+                                    <input type="number" id="total-episodes" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Total Episodes" value="1">
+                                </div>
+
+                                <select id="show-status" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent appearance-none">
+                                    <option value="watching">Watching</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="on-hold">On Hold</option>
+                                    <option value="dropped">Dropped</option>
+                                    <option value="watchlist">Watchlist</option>
+                                </select>
+
+                                <textarea id="show-synopsis" rows="3" class="hidden" placeholder="Synopsis will be auto-filled..."></textarea>
+                            </div>
+
+                            <div class="flex justify-end items-center gap-4 pt-6 mt-auto">
+                                <button type="button" class="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-300" id="cancel-modal-btn">Cancel</button>
+                                <button type="submit" class="px-8 py-3 text-md font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-gray-900 transition-colors">Save Show</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Details Modal -->
+    <div id="details-modal" class="modal-backdrop">
+        <div class="modal-content bg-white dark:bg-gray-900/80 dark:backdrop-blur-sm border dark:border-gray-700/50 rounded-xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+             <div class="p-8 relative">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 id="details-title" class="text-3xl font-bold text-gray-900 dark:text-white">Show Title</h3>
+                    <button id="close-details-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-200" title="Close modal">
+                        <i class="fas fa-times fa-lg"></i>
+                    </button>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <img id="details-img" src="" alt="Show Cover" class="w-full h-auto object-cover rounded-lg shadow-md">
+                    <div class="md:col-span-2">
+                        <div id="details-synopsis-wrapper" class="mb-6">
+                            <h4 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">Synopsis</h4>
+                            <p id="details-synopsis" class="text-sm text-gray-600 dark:text-gray-400 p-3 bg-gray-100 dark:bg-gray-800/50 rounded-md max-h-48 overflow-y-auto">Synopsis goes here...</p>
+                        </div>
+                        
+                        <!-- User Controls (for shows in list) -->
+                        <div id="details-user-controls" class="space-y-4">
+                            <div>
+                                <label for="details-status" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Your Status</label>
+                                <select id="details-status" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent appearance-none"></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="details-watched" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Episodes Watched</label>
+                                    <input type="number" id="details-watched" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" min="0">
+                                </div>
+                                 <div>
+                                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Episodes</label>
+                                    <p id="details-total" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 rounded-lg">/ 12</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="flex justify-between items-center mt-8">
+                    <div id="details-watch-now-container" class="mr-auto flex items-center"></div>
+                    <div id="details-actions-container" class="flex items-center gap-2">
+                        <!-- Remove button will be dynamically shown/hidden -->
+                        <button id="details-remove-btn" class="hidden px-6 py-2 text-sm font-medium text-red-500 hover:text-red-400">Remove</button>
+
+                        <!-- This will hold either the "Save Changes" button or the "Add to List" dropdown -->
+                        <button id="details-save-btn" class="hidden px-8 py-3 text-md font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-gray-900 transition-colors">Save Changes</button>
+                        <div id="details-add-dropdown-container" class="relative inline-block text-left hidden">
+                            <button type="button" class="add-to-list-dropdown-btn inline-flex justify-center items-center w-full rounded-lg shadow-sm px-6 py-3 bg-rose-600 text-white text-md font-bold hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-gray-900">
+                                Add to List
+                                <i class="fas fa-chevron-down text-xs -mr-1 ml-2 text-rose-200"></i>
+                            </button>
+                            <div class="add-to-list-options hidden origin-top-right absolute right-0 bottom-full mb-2 w-56 rounded-xl shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-10 border border-gray-200 dark:border-gray-700">
+                                <!-- Dropdown items will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-backdrop">
+        <div class="modal-content bg-white dark:bg-gray-900/80 dark:backdrop-blur-sm border dark:border-gray-700/50 rounded-xl shadow-2xl w-full max-w-sm mx-4">
+            <div class="p-8 relative">
+                <button id="close-login-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-200" title="Close modal">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+                <div class="text-center mb-8">
+                    <img src="/S/files/Tab.png" alt="BingeHub Logo" class="h-16 w-auto mx-auto mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back!</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Sign in to continue to BingeHub</p>
+                </div>
+
+                <form id="login-form">
+                    <div class="space-y-4">
+                        <input type="text" id="username" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Username" required>
+                        <input type="password" id="password" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="w-full mt-6 px-6 py-3 text-md font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-gray-900 transition-colors">Login</button>
+                </form>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-700"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-900 text-gray-500">Or continue with</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="social-btn w-full inline-flex justify-center items-center py-2 px-4 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-300">
+                        <i class="fab fa-google text-red-500 fa-lg fa-fw mr-2"></i> Google
+                    </button>
+                    <button class="social-btn w-full inline-flex justify-center items-center py-2 px-4 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-300">
+                        <i class="fab fa-github fa-lg fa-fw mr-2"></i> GitHub
+                    </button>
+                </div>
+
+                <p class="mt-6 text-center text-sm text-gray-400">
+                    Need an account? <a href="#" id="go-to-signup" class="font-medium text-rose-400 hover:text-rose-300">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+     <!-- Signup Modal -->
+     <div id="signup-modal" class="modal-backdrop">
+        <div class="modal-content bg-white dark:bg-gray-900/80 dark:backdrop-blur-sm border dark:border-gray-700/50 rounded-xl shadow-2xl w-full max-w-sm mx-4">
+            <div class="p-8 relative">
+                <button id="close-signup-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-200" title="Close modal">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+                <div class="text-center mb-8">
+                    <img src="/S/files/Tab.png" alt="BingeHub Logo" class="h-16 w-auto mx-auto mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Create an Account</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Join BingeHub to start tracking!</p>
+                </div>
+
+                <form id="signup-form">
+                    <div class="space-y-4">
+                        <input type="text" id="signup-username" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Username" required>
+                        <input type="email" id="signup-email" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Email Address" required>
+                        <input type="password" id="signup-password" class="block w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-transparent dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent" placeholder="Password" required>
+                    </div>
+                    <p id="password-requirements" class="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">Password must contain at least one uppercase letter, two numbers, and one symbol.</p>
+                    <button type="submit" class="w-full mt-6 px-6 py-3 text-md font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 focus:ring-offset-gray-900 transition-colors">Create Account</button>
+                </form>
+
+                <p class="mt-6 text-center text-sm text-gray-400">
+                    Already have an account? <a href="#" id="go-to-login" class="font-medium text-rose-400 hover:text-rose-300">Log in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            let animeData = [];
+            const animeSynopsis = {};
+
+
+            
+
+
+            const animeGrid = document.getElementById('anime-grid');
+            const recommendationsGrid = document.getElementById('recommendations-grid');
+            let globalSearchTimeout;
+            let discoverAnimePage = 1;
+            let discoverTvPage = 0; // TVMaze is 0-indexed
+            let selectedGenre = '';
+            const allGenres = new Set();
+
+            function renderAll() {
+                const currentTab = document.querySelector('.tab-item.active-tab').dataset.tab;
+                updateDashboard();
+                renderAnimeCards(currentTab);
+            }
+
+            function createCardHTML(show, type, index = 0) {
+                const isUserCard = type === 'user';
+                const progress = show.total > 0 ? (show.watched / show.total) * 100 : 0;
+
+                const cardBody = isUserCard ? `
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="font-bold text-md mb-2 truncate flex-grow">${show.title}</h3>
+                        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            <span>Ep: ${show.watched} / ${show.total || 'N/A'}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                            <div class="bg-rose-600 h-2.5 rounded-full" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="font-bold text-md mb-2 truncate flex-grow">${show.title}</h3>
+                    </div>
+                `;
+
+                const synopsisText = (show.synopsis || animeSynopsis[show.title] || 'No synopsis available.').substring(0, 150) + '...';
+
+                return `
+                    <div class="card-animated group relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col"
+                         style="animation-delay: ${index * 50}ms;">
+                        <div class="relative">
+                            <img src="${show.img}" alt="${show.title}" class="w-full h-full object-cover" style="height: 320px;" onerror="this.onerror=null;this.src='https://placehold.co/400x600/1F2937/E5E7EB?text=${encodeURIComponent(show.title)}';">
+                            <div class="card-hover-overlay">
+                                <p class="text-xs text-gray-300 mb-4">${synopsisText}</p>
+                                <button class="details-btn w-full px-4 py-2 text-sm font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition-colors"
+                                    data-id="${show.id}" 
+                                    ${type !== 'user' ? `data-is-recommendation="true" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'` : ''}>
+                                    ${type === 'user' ? 'Manage' : 'Details & Add'}
+                                </button>
+                                ${show.href ? `<a href="${show.href}" target="_blank" class="mt-2 text-xs text-gray-400 hover:text-white hover:underline">Go to site <i class="fas fa-external-link-alt fa-xs"></i></a>` : ''}
+                            </div>
+                        </div>
+                        ${cardBody}
+                    </div>`;
+            }
+
+            function renderUserList(filter) {
+                animeGrid.innerHTML = '';
+                
+                let dataToRender = animeData;
+
+                if (filter !== 'all') {
+                    dataToRender = dataToRender.filter(anime => anime.status.replace(/-/g, '') === filter.replace(/-/g, ''));
+                }
+
+                const searchQuery = document.getElementById('search-input').value.toLowerCase();
+                if (searchQuery) {
+                    dataToRender = dataToRender.filter(anime => anime.title.toLowerCase().includes(searchQuery));
+                }
+                
+                if (dataToRender.length === 0) {
+                    animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">No shows found.</p></div>`;
+                    return;
+                }
+
+                const cardsHtml = dataToRender.map((show, index) => createCardHTML(show, 'user', index)).join('');
+                animeGrid.innerHTML = cardsHtml;
+            }
+
+            async function renderDiscoverPage(page = 1) {
+                animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Loading popular shows...</p></div>`;
+                
+                const genreQuery = selectedGenre ? `&genres=${allGenres.get(selectedGenre)?.id || ''}` : '';
+                try {
+                    const response = await fetch(`https://api.jikan.moe/v4/top/anime?limit=24&page=${page}${genreQuery}`);
+                    if (!response.ok) throw new Error('Failed to fetch discover data');
+                    const data = await response.json();
+                    const hasNextPage = data.pagination?.has_next_page;
+                    
+                    const userShowIds = new Set(animeData.map(a => a.id));
+                    let discoverShows = data.data
+                        .filter(rec => !userShowIds.has(rec.mal_id))
+                        .map(anime => ({
+                            id: anime.mal_id,
+                            title: anime.title,
+                            img: anime.images.jpg.large_image_url,
+                            href: `https://www.crunchyroll.com/search?q=${encodeURIComponent(anime.title_english || anime.title)}`,
+                            total: anime.episodes || 0,
+                            synopsis: anime.synopsis
+                        }));
+
+                    // If filtering results in no new shows, fall back to showing the original list.
+                    if (discoverShows.length === 0 && data.data.length > 0) {
+                        discoverShows = data.data.map(anime => ({
+                            id: anime.mal_id,
+                            title: anime.title,
+                            img: anime.images.jpg.large_image_url,
+                            href: `https://www.crunchyroll.com/search?q=${encodeURIComponent(anime.title_english || anime.title)}`,
+                            total: anime.episodes || 0,
+                            synopsis: anime.synopsis
+                        }));
+                    }
+
+                    animeGrid.innerHTML = ''; // Clear loading message
+                    if (discoverShows.length === 0) {
+                        animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Nothing new to discover right now.</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = discoverShows.map((show, index) => {
+                        if (show.synopsis) animeSynopsis[show.title] = show.synopsis;
+                        return createCardHTML(show, 'discover', index);
+                    }).join('');
+                    animeGrid.innerHTML = cardsHtml;
+                } catch (error) {
+                    console.error("Failed to fetch discover shows:", error);
+                    animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                } finally {
+                    document.getElementById('page-indicator').textContent = `Page ${page}`;
+                    document.getElementById('prev-page-btn').disabled = page === 1;
+                    document.getElementById('next-page-btn').disabled = !hasNextPage;
+                }
+            }
+
+            async function renderDiscoverTvPage(page = 0, applyGenreFilter = false) {
+                animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Loading popular TV shows...</p></div>`;
+                
+                try {
+                    const response = await fetch(`https://api.tvmaze.com/shows?page=${page}`);
+                    if (!response.ok) throw new Error('Failed to fetch TV shows for discover page');
+                    let shows = await response.json();
+                    
+                    const userShowTitles = new Set(animeData.map(a => a.title.toLowerCase()));
+                    
+                    // TVMaze doesn't have a "top" list, so we sort by rating and paginate manually
+                    let discoverShows = shows
+                        .sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0)) // Sort by rating
+                        .map(show => ({
+                            id: `tv-${show.id}`,
+                            title: show.name,
+                            img: show.image?.medium.replace('http:', 'https:') || 'https://placehold.co/400x600/1F2937/E5E7EB?text=No+Image',
+                            href: show.url,
+                            genres: show.genres || [],
+                            total: 0,
+                            synopsis: show.summary?.replace(/<[^>]*>?/gm, '') || 'No synopsis available.'
+                        }))
+                        .filter(show => !userShowTitles.has(show.title.toLowerCase()));
+
+                    // If filtering results in no new shows, fall back to showing the original list.
+                    if (discoverShows.length === 0 && shows.length > 0) {
+                        discoverShows = shows
+                            .sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0))
+                            .map(show => ({
+                                id: `tv-${show.id}`,
+                                title: show.name,
+                                img: show.image?.medium.replace('http:', 'https:') || 'https://placehold.co/400x600/1F2937/E5E7EB?text=No+Image',
+                                href: show.url,
+                                genres: show.genres || [],
+                                total: 0,
+                                synopsis: show.summary?.replace(/<[^>]*>?/gm, '') || 'No synopsis available.'
+                            }));
+                    }
+
+                    // Client-side filtering for TV show genres
+                    if (applyGenreFilter && selectedGenre) {
+                        discoverShows = discoverShows.filter(show => show.genres.includes(selectedGenre));
+                    }
+
+                    animeGrid.innerHTML = ''; // Clear loading message
+                    if (discoverShows.length === 0) {
+                        animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Nothing new to discover right now.</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = discoverShows.map((show, index) => {
+                        if (show.synopsis) animeSynopsis[show.title] = show.synopsis;
+                        return createCardHTML(show, 'discover', index);
+                    }).join('');
+                    animeGrid.innerHTML = cardsHtml;
+                } catch (error) {
+                    console.error("Failed to fetch discover TV shows:", error);
+                    animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                } finally {
+                    document.getElementById('page-indicator').textContent = `Page ${page + 1}`;
+                    document.getElementById('prev-page-btn').disabled = page === 0;
+                    // We assume there's always a next page for TVMaze as it doesn't tell us otherwise
+                    document.getElementById('next-page-btn').disabled = false; 
+                }
+            }
+
+            function renderAnimeCards(filter = 'all', resetPage = false) {
+                const paginationControls = document.getElementById('pagination-controls');
+                if (resetPage) {
+                    discoverAnimePage = 1;
+                    discoverTvPage = 0;
+                }
+
+                if (filter === 'all') {
+                    document.getElementById('genre-chips-section').classList.remove('hidden');
+                    document.getElementById('discover-submenu').classList.remove('hidden');
+                    paginationControls.classList.remove('hidden');
+                    const activeDiscover = document.querySelector('.discover-tab-item.active-discover-tab').dataset.discover;
+                    if (activeDiscover === 'tv') {
+                        // Optionally hide or show different genres for TV
+                        renderDiscoverTvPage(discoverTvPage);
+                    } else {
+                        // Optionally hide or show different genres for Anime
+                        renderDiscoverPage(discoverAnimePage);
+                    }
+                    populateGenreFilter(); // Repopulate to apply active styles correctly
+                } else {
+                    document.getElementById('discover-submenu').classList.add('hidden');
+                    paginationControls.classList.add('hidden');
+                    renderUserList(filter);
+                }
+            }
+
+            async function renderRecommendations() {
+                recommendationsGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Loading recommendations...</p></div>`;
+                
+                try {
+                    const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=24');
+                    if (!response.ok) throw new Error('Failed to fetch recommendations');
+                    const data = await response.json();
+                    
+                    const userShowIds = new Set(animeData.map(a => a.id));
+                    let recommendations = data.data.map(anime => ({
+                        id: anime.mal_id,
+                        title: anime.title,
+                        img: anime.images.jpg.large_image_url,
+                        href: anime.url,
+                        total: anime.episodes || 0,
+                        synopsis: anime.synopsis
+                    }));
+
+                    let filteredRecommendations = recommendations.filter(rec => !userShowIds.has(rec.mal_id));
+
+                    // If filtering leaves nothing, fall back to the original list
+                    if (filteredRecommendations.length < 6) {
+                        filteredRecommendations = recommendations;
+                    }
+
+                    const finalRecommendations = [...filteredRecommendations].sort(() => 0.5 - Math.random()).slice(0, 6);
+
+                    recommendationsGrid.innerHTML = ''; // Clear loading message
+                    if (finalRecommendations.length === 0) {
+                        recommendationsGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">No new recommendations available right now.</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = recommendations.map((show, index) => {
+                        // Store synopsis for later use in the details modal
+                        if (show.synopsis) {
+                            animeSynopsis[show.title] = show.synopsis;
+                        }
+                        return createCardHTML(show, 'recommendation', index);
+                    }).join('');
+
+                    recommendationsGrid.innerHTML = cardsHtml;
+
+                } catch (error) {
+                    console.error("Failed to fetch recommendations:", error);
+                    recommendationsGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                }
+            }
+
+            async function renderAiringNow() {
+                const airingGrid = document.getElementById('airing-now-grid');
+                airingGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Loading currently airing shows...</p></div>`;
+                
+                try {
+                    const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=12');
+                    if (!response.ok) throw new Error('Failed to fetch airing shows');
+                    const data = await response.json();
+                    
+                    const userShowIds = new Set(animeData.map(a => a.id));
+                    let airingShows = data.data.map(anime => ({
+                        id: anime.mal_id,
+                        title: anime.title,
+                        img: anime.images.jpg.large_image_url,
+                        href: anime.url,
+                        total: anime.episodes || 0,
+                        synopsis: anime.synopsis
+                    }));
+
+                    let filteredShows = airingShows.filter(rec => !userShowIds.has(rec.mal_id));
+
+                    if (filteredShows.length < 6) {
+                        filteredShows = airingShows;
+                    }
+                    const showsToDisplay = [...filteredShows].sort(() => 0.5 - Math.random()).slice(0, 6);
+
+                    airingGrid.innerHTML = ''; // Clear loading message
+                    if (showsToDisplay.length === 0) {
+                        airingGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">No new airing shows to recommend right now.</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = showsToDisplay.map((show, index) => {
+                        if (show.synopsis) animeSynopsis[show.title] = show.synopsis;
+                        return createCardHTML(show, 'recommendation', index);
+                    }).join('');
+                    airingGrid.innerHTML = cardsHtml;
+                } catch (error) {
+                    console.error("Failed to fetch airing shows:", error);
+                    airingGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                }
+            }
+
+            async function renderTvShows() {
+                const tvGrid = document.getElementById('tv-shows-grid');
+                tvGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Loading popular TV shows...</p></div>`;
+                
+                try {
+                    const response = await fetch('https://api.tvmaze.com/shows');
+                    if (!response.ok) throw new Error('Failed to fetch TV shows');
+                    let shows = await response.json();
+                    
+                    const userShowTitles = new Set(animeData.map(a => a.title.toLowerCase()));
+                    let popularShows = shows.map(show => ({
+                        id: `tv-${show.id}`,
+                        title: show.name,
+                        img: show.image?.medium.replace('http:', 'https:') || 'https://placehold.co/400x600/1F2937/E5E7EB?text=No+Image',
+                        href: show.url,
+                        total: 0,
+                        synopsis: show.summary?.replace(/<[^>]*>?/gm, '') || 'No synopsis available.'
+                    }));
+
+                    let filteredShows = popularShows.filter(show => !userShowTitles.has(show.title.toLowerCase()));
+                    if (filteredShows.length < 6) {
+                        filteredShows = popularShows;
+                    }
+                    const showsToDisplay = [...filteredShows].sort(() => 0.5 - Math.random()).slice(0, 6);
+
+                    tvGrid.innerHTML = ''; // Clear loading message
+                    if (showsToDisplay.length === 0 && popularShows.length > 0) {
+                        tvGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">No new TV shows to recommend right now.</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = showsToDisplay.map((show, index) => {
+                        if (show.synopsis) animeSynopsis[show.title] = show.synopsis;
+                        return createCardHTML(show, 'recommendation', index);
+                    }).join('');
+                    tvGrid.innerHTML = cardsHtml;
+                } catch (error) {
+                    console.error("Failed to fetch TV shows:", error);
+                    tvGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                }
+            }
+
+            function updateDashboard() {
+                const statusCounts = animeData.reduce((acc, show) => {
+                    acc[show.status] = (acc[show.status] || 0) + 1;
+                    return acc;
+                }, {});
+
+                document.getElementById('count-all').textContent = animeData.length;
+
+                const statuses = ['watching', 'completed', 'on-hold', 'dropped', 'watchlist'];
+                statuses.forEach(status => {
+                    const count = statusCounts[status] || 0;
+                    const countElement = document.getElementById(`count-${status}`);
+                    if (countElement) {
+                        countElement.textContent = count;
+                    }
+                });
+            }
+
+            // Event Listeners
+            document.getElementById('main-tabs-container').querySelectorAll('.tab-item').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const clickedTab = e.currentTarget;
+                    document.querySelectorAll('.tab-item').forEach(t => {
+                        t.classList.remove('active-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                        t.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/50');
+                    });
+                    clickedTab.classList.add('active-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                    clickedTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/50');
+                    renderAnimeCards(e.currentTarget.dataset.tab, true);
+                    updateDashboard(); // Also update dashboard to reflect any changes
+                });
+            });
+
+            document.querySelectorAll('.discover-tab-item').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.discover-tab-item').forEach(t => {
+                        t.classList.remove('active-discover-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                        t.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-300/50', 'dark:hover:bg-gray-600/50');
+                    });
+                    e.target.classList.add('active-discover-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                    e.target.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-300/50', 'dark:hover:bg-gray-600/50');
+                    // Re-render the 'all' view which will now pick up the new active discover tab
+                    renderAnimeCards('all', true);
+                });
+            });
+
+             async function populateGenreFilter() {
+                 try {
+                     // Fetch genres from both APIs
+                     if (allGenres.size === 0) {
+                        const [animeGenresRes, tvShowsRes] = await Promise.all([
+                            fetch('https://api.jikan.moe/v4/genres/anime'),
+                            fetch('https://api.tvmaze.com/shows') // Fetch shows to extract genres
+                        ]);
+ 
+                        if (animeGenresRes.ok) {
+                            const animeGenresData = await animeGenresRes.json();
+                             animeGenresData.data.forEach(genre => { if (!allGenres.has(genre.name)) allGenres.set(genre.name, { id: genre.mal_id, type: 'anime' }); });
+                        }
+ 
+                        if (tvShowsRes.ok) {
+                            const tvShowsData = await tvShowsRes.json();
+                             tvShowsData.forEach(show => {
+                                if (show.genres) {
+                                     show.genres.forEach(genre => { if (!allGenres.has(genre)) allGenres.set(genre, { id: null, type: 'tv' }); });
+                                }
+                            });
+                        }
+                    }
+
+                     const sortedGenres = Array.from(allGenres).sort();
+                     const chipsContainer = document.getElementById('genre-chips-container');
+                     chipsContainer.innerHTML = ''; // Clear existing chips
+
+                     // Add "All Genres" chip first
+                     const allChip = document.createElement('button');
+                     allChip.className = `genre-chip whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${selectedGenre === '' ? 'bg-rose-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`;
+                     allChip.textContent = 'All Genres';
+                     allChip.dataset.genre = '';
+                     chipsContainer.appendChild(allChip);
+
+                     sortedGenres.forEach(genre => {
+                         const chip = document.createElement('button');
+                         chip.className = `genre-chip whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${selectedGenre === genre ? 'bg-rose-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'}`;
+                         chip.textContent = genre;
+                         chip.dataset.genre = genre;
+                         chipsContainer.appendChild(chip);
+                     });
+                 } catch (error) {
+                     console.error("Could not populate genre filter:", error);
+                 }
+             }
+
+            document.getElementById('genre-chips-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('genre-chip')) {
+                    selectedGenre = e.target.dataset.genre;
+                    // Visually update all chips
+                    populateGenreFilter(); 
+                    renderAnimeCards('all', true); // Re-render discover view with new genre
+                }
+            });
+
+            // --- Pagination Event Listeners ---
+            document.getElementById('prev-page-btn').addEventListener('click', () => {
+                const activeDiscover = document.querySelector('.discover-tab-item.active-discover-tab').dataset.discover;
+                if (activeDiscover === 'anime' && discoverAnimePage > 1) {
+                    discoverAnimePage--;
+                    renderDiscoverPage(discoverAnimePage);
+                } else if (activeDiscover === 'tv' && discoverTvPage > 0) {
+                    discoverTvPage--;
+                    renderDiscoverTvPage(discoverTvPage);
+                }
+            });
+
+            document.getElementById('next-page-btn').addEventListener('click', () => {
+                const activeDiscover = document.querySelector('.discover-tab-item.active-discover-tab').dataset.discover;
+                if (activeDiscover === 'anime') {
+                    discoverAnimePage++;
+                    renderDiscoverPage(discoverAnimePage);
+                } else if (activeDiscover === 'tv') {
+                    discoverTvPage++;
+                    renderDiscoverTvPage(discoverTvPage);
+                }
+            });
+
+
+            async function performGlobalSearch(query) {
+                animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">Searching for "${query}"...</p></div>`;
+                document.getElementById('discover-submenu').classList.add('hidden');
+
+                try {
+                    // Fetch from both APIs in parallel
+                    const [animeRes, tvRes] = await Promise.all([
+                        fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=12`),
+                        fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`)
+                    ]);
+
+                    if (!animeRes.ok && !tvRes.ok) throw new Error('Both APIs failed to respond.');
+
+                    const animeResults = animeRes.ok ? (await animeRes.json()).data : [];
+                    const tvResults = tvRes.ok ? (await tvRes.json()) : [];
+
+                    const userShowIds = new Set(animeData.map(a => a.id));
+                    const userShowTitles = new Set(animeData.map(a => a.title.toLowerCase()));
+
+                    const combinedResults = [
+                        ...animeResults.map(anime => ({
+                            id: anime.mal_id,
+                            title: anime.title,
+                            img: anime.images.jpg.large_image_url,
+                            href: anime.url,
+                            total: anime.episodes || 0,
+                            synopsis: anime.synopsis
+                        })),
+                        ...tvResults.map(item => ({
+                            id: `tv-${item.show.id}`,
+                            title: item.show.name,
+                            img: item.show.image?.medium.replace('http:', 'https:') || 'https://placehold.co/400x600/1F2937/E5E7EB?text=No+Image',
+                            href: item.show.url,
+                            total: 0,
+                            synopsis: item.show.summary?.replace(/<[^>]*>?/gm, '') || 'No synopsis available.'
+                        }))
+                    ].filter(show => !userShowIds.has(show.id) && !userShowTitles.has(show.title.toLowerCase()));
+
+                    animeGrid.innerHTML = '';
+                    if (combinedResults.length === 0) {
+                        animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-gray-500 dark:text-gray-400 text-lg">No new results found for "${query}".</p></div>`;
+                        return;
+                    }
+
+                    const cardsHtml = combinedResults.map((show, index) => {
+                        if (show.synopsis) animeSynopsis[show.title] = show.synopsis;
+                        return createCardHTML(show, 'discover', index);
+                    }).join('');
+                    animeGrid.innerHTML = cardsHtml;
+
+                } catch (error) {
+                    console.error("Failed to perform global search:", error);
+                    animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                }
+            }
+
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                clearTimeout(globalSearchTimeout);
+                const query = e.target.value.trim();
+
+                if (query.length >= 3) {
+                    globalSearchTimeout = setTimeout(() => {
+                        performGlobalSearch(query);
+                    }, 500); // Debounce for 500ms
+                } else if (query.length === 0) {
+                    // Restore the view if search is cleared
+                    const currentTab = document.querySelector('.tab-item.active-tab').dataset.tab;
+                    renderAnimeCards(currentTab);
+                }
+            });
+            
+            document.getElementById('discover-refresh-btn').addEventListener('click', () => {
+                const activeDiscover = document.querySelector('.discover-tab-item.active-discover-tab').dataset.discover;
+                
+                if (activeDiscover === 'tv') {
+                    // For TV, fetch a random page between 0 and 200 (a reasonable upper limit for TVMaze)
+                    const randomPage = Math.floor(Math.random() * 201);
+                    discoverTvPage = randomPage;
+                    renderDiscoverTvPage(randomPage);
+                } else {
+                    // For Anime, fetch a random page between 1 and 50 (to avoid empty pages on Jikan)
+                    const randomPage = Math.floor(Math.random() * 50) + 1;
+                    discoverAnimePage = randomPage;
+                    renderDiscoverPage(randomPage);
+                }
+                // Scroll to the top of the grid to show the new content
+                const gridTop = document.getElementById('anime-grid').offsetTop;
+                window.scrollTo({ top: gridTop - 150, behavior: 'smooth' }); // Adjust offset for header
+            });
+            
+            document.getElementById('recommend-refresh-btn').addEventListener('click', renderRecommendations);
+
+            document.getElementById('tv-refresh-btn').addEventListener('click', renderTvShows);
+
+            document.getElementById('airing-refresh-btn').addEventListener('click', renderAiringNow);
+
+            // Modal Functionality
+            const showModal = document.getElementById('show-modal');
+            const detailsModal = document.getElementById('details-modal');
+            
+            function openModal(modal) { 
+                document.body.classList.add('modal-open');
+                modal.classList.add('active'); 
+            }
+            function closeModal(modal) { 
+                document.body.classList.remove('modal-open');
+                modal.classList.remove('active'); 
+            }
+
+            document.getElementById('add-show-btn').addEventListener('click', () => {
+                document.getElementById('modal-title').textContent = 'Add to a list';
+                document.getElementById('show-form').reset();
+                document.getElementById('show-id').value = '';
+                document.getElementById('show-href').value = '';
+                document.getElementById('search-results').innerHTML = '';
+                openModal(showModal);
+            });
+
+            document.getElementById('close-modal-btn').addEventListener('click', () => closeModal(showModal));
+            document.getElementById('cancel-modal-btn').addEventListener('click', () => closeModal(showModal));
+            showModal.addEventListener('click', (e) => e.target === showModal && closeModal(showModal));
+
+            document.getElementById('close-details-btn').addEventListener('click', () => closeModal(detailsModal));
+            detailsModal.addEventListener('click', (e) => e.target === detailsModal && closeModal(detailsModal));
+
+            // Add/Edit Form Submission
+            document.getElementById('show-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const id = document.getElementById('show-id').value;
+                const newShow = {
+                    title: document.getElementById('show-title').value.trim(),
+                    img: document.getElementById('show-img-url').value.trim() || `https://placehold.co/400x600/1F2937/E5E7EB?text=${encodeURIComponent(document.getElementById('show-title').value.trim())}`,
+                    status: document.getElementById('show-status').value,
+                    watched: parseInt(document.getElementById('episodes-watched').value) || 0,
+                    total: parseInt(document.getElementById('total-episodes').value) || 0,
+                    href: document.getElementById('show-href').value.trim()
+                };
+
+                if (!newShow.title) { alert('Title is required.'); return; }
+
+                if (id) { // Editing existing
+                    // Note: Synopsis editing is done in the details modal, not here.
+                    // This form is primarily for adding new shows or quick edits of basic info.
+                    const index = animeData.findIndex(a => a.id == id);
+                    if (index > -1) animeData[index] = { ...animeData[index], ...newShow, id: parseInt(id) };
+                } else { // Adding a new show
+                    newShow.id = animeData.length > 0 ? Math.max(...animeData.map(a => a.id)) + 1 : 1;
+                    // Also add the synopsis to our synopsis object
+                    const synopsis = document.getElementById('show-synopsis').value.trim();
+                    if (synopsis) {
+                        animeSynopsis[newShow.title] = synopsis;
+                    }
+                    animeData.push(newShow);
+                }
+                saveAnimeData();
+                closeModal(showModal);
+                renderAll();
+            });
+
+            // Remove from Details Modal
+            document.getElementById('details-remove-btn').addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                const show = animeData.find(a => a.id == id);
+                if (show && confirm(`Are you sure you want to remove "${show.title}" from your list?`)) {
+                    animeData = animeData.filter(a => a.id != id);
+                    saveAnimeData();
+                    closeModal(detailsModal);
+                    renderAll();
+                }
+            });
+
+
+            // Initialize or load data from localStorage
+            async function initializeApp() {
+                if (localStorage.getItem('animeData')) {
+                    if (localStorage.getItem('animeSynopsis')) {
+                        const savedSynopsis = JSON.parse(localStorage.getItem('animeSynopsis'));
+                        Object.assign(animeSynopsis, savedSynopsis);
+                    }
+                    animeData = JSON.parse(localStorage.getItem('animeData'));
+                } else {
+                    try {
+                        const response = await fetch('https://api.jikan.moe/v4/top/anime?limit=12');
+                        if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                        const data = await response.json();
+                        animeData = data.data.map(anime => ({
+                            id: anime.mal_id,
+                            title: anime.title,
+                            status: 'watchlist',
+                            watched: 0,
+                            total: anime.episodes || 0,
+                            img: anime.images.jpg.large_image_url,
+                            href: `https://www.crunchyroll.com/search?q=${encodeURIComponent(anime.title)}`
+                        }));
+                        data.data.forEach(anime => {
+                            if (anime.synopsis) animeSynopsis[anime.title] = anime.synopsis;
+                        });
+                        saveAnimeData();
+                    } catch (error) {
+                        console.error("Failed to fetch initial anime data:", error);
+                        animeGrid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-red-500 text-lg">please refresh the page..</p></div>`;
+                        return; // Stop execution if initial data fails
+                    }
+                }
+
+                // Initial render of essential content
+                updateDashboard();
+                renderAll();
+                populateGenreFilter(); // Genres are needed for the discover tab
+
+                // Lazy load other sections
+                const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const sectionId = entry.target.id;
+                            if (sectionId === 'recommendations-grid') renderRecommendations();
+                            if (sectionId === 'airing-now-grid') renderAiringNow();
+                            if (sectionId === 'tv-shows-grid') renderTvShows();
+                            observer.unobserve(entry.target); // Load only once
+                        }
+                    });
+                }, { rootMargin: '200px' }); // Start loading 200px before it's visible
+
+                lazyLoadObserver.observe(document.getElementById('recommendations-grid'));
+                lazyLoadObserver.observe(document.getElementById('airing-now-grid'));
+                lazyLoadObserver.observe(document.getElementById('tv-shows-grid'));
+            }
+
+            function saveAnimeData() {
+                localStorage.setItem('animeData', JSON.stringify(animeData));
+                // Also save the synopsis data
+                localStorage.setItem('animeSynopsis', JSON.stringify(animeSynopsis));
+            }
+
+            function showDetailsForExistingShow(show, isFromRecommendation) {
+                // Populate Modal Content
+                const synopsisText = show.synopsis || animeSynopsis[show.title] || 'No synopsis available.';
+                document.getElementById('details-title').textContent = show.title;
+                document.getElementById('details-img').src = show.img;
+                const synopsisEl = document.getElementById('details-synopsis');
+                synopsisEl.textContent = synopsisText;
+                synopsisEl.classList.add('spoiler');
+                synopsisEl.classList.remove('revealed');
+
+                // Show/Hide fields based on context
+                const saveBtn = document.getElementById('details-save-btn');
+                const addDropdownContainer = document.getElementById('details-add-dropdown-container');
+                const removeBtn = document.getElementById('details-remove-btn');
+                const userControls = document.getElementById('details-user-controls');
+
+                if (isFromRecommendation) {
+                    saveBtn.classList.add('hidden');
+                    addDropdownContainer.classList.remove('hidden');
+                    userControls.classList.add('hidden');
+                    removeBtn.classList.add('hidden');
+                    
+                    const dropdownOptions = addDropdownContainer.querySelector('.add-to-list-options');
+                    dropdownOptions.innerHTML = ` 
+                        <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                            <a href="#" class="add-to-list-item text-gray-700 dark:text-gray-200 block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-status="watching" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'>
+                                <i class="fas fa-eye fa-fw mr-2 text-blue-500"></i>Watching
+                            </a>
+                            <a href="#" class="add-to-list-item text-gray-700 dark:text-gray-200 block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-status="watchlist" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'>
+                                <i class="fas fa-list-alt fa-fw mr-2 text-gray-500"></i>Watchlist
+                            </a>
+                            <a href="#" class="add-to-list-item text-gray-700 dark:text-gray-200 block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-status="completed" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'>
+                                <i class="fas fa-check-circle fa-fw mr-2 text-green-500"></i>Completed
+                            </a>
+                            <a href="#" class="add-to-list-item text-gray-700 dark:text-gray-200 block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-status="on-hold" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'>
+                                <i class="fas fa-pause-circle fa-fw mr-2 text-yellow-500"></i>On Hold
+                            </a>
+                            <a href="#" class="add-to-list-item text-gray-700 dark:text-gray-200 block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-status="dropped" data-show='${JSON.stringify(show).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}'>
+                                <i class="fas fa-times-circle fa-fw mr-2 text-red-500"></i>Dropped
+                            </a>`;
+                } else {
+                    saveBtn.classList.remove('hidden');
+                    addDropdownContainer.classList.add('hidden');
+                    userControls.classList.remove('hidden');
+                    removeBtn.classList.remove('hidden');
+                    document.getElementById('details-watched').value = show.watched;
+                    document.getElementById('details-total').textContent = `/ ${show.total}`;
+
+                    const statusSelect = document.getElementById('details-status');
+                    statusSelect.innerHTML = `
+                        <option value="watching">Watching</option>
+                        <option value="completed">Completed</option>
+                        <option value="on-hold">On Hold</option>
+                        <option value="dropped">Dropped</option>
+                        <option value="watchlist">Watchlist</option>
+                    `;
+                    statusSelect.value = show.status;
+                }
+
+                const watchNowContainer = document.getElementById('details-watch-now-container');
+                watchNowContainer.innerHTML = ''; // Clear previous button
+                if (show.href) {
+                    watchNowContainer.innerHTML = `<a href="${show.href}" target="_blank" class="px-6 py-3 text-md font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Watch Now <i class="fas fa-external-link-alt fa-xs ml-2"></i></a>`;
+                }
+
+                document.getElementById('details-save-btn').dataset.id = show.id;
+                document.getElementById('details-remove-btn').dataset.id = show.id;
+
+                openModal(detailsModal);
+            }
+
+            // Save after details modal edit
+            document.getElementById('details-save-btn').addEventListener('click', () => {
+                const id = document.getElementById('details-save-btn').dataset.id;
+                const index = animeData.findIndex(a => a.id == id);
+                if (index > -1) {
+                    animeData[index].status = document.getElementById('details-status').value;
+                    animeData[index].watched = parseInt(document.getElementById('details-watched').value) || 0;
+                    // Note: Score and other fields could be saved here too if they were in the modal
+                    saveAnimeData();
+                    closeModal(detailsModal);
+                    renderAll();
+                } else {
+                    console.error("Could not find show to save with id:", id);
+                }
+            });
+
+            // Details and Recommendations Buttons (Event Delegation)
+            document.body.addEventListener('click', (e) => {
+                // Details Button
+                if (e.target.classList.contains('details-btn')) {
+                    const id = e.target.dataset.id;
+                    if (id) {
+                        const isRecommendation = e.target.hasAttribute('data-is-recommendation');
+                        const show = isRecommendation ? JSON.parse(e.target.dataset.show) : animeData.find(a => a.id == id);
+                        if (show) {
+                            showDetailsForExistingShow(show, isRecommendation);
+                        }
+                    }
+                }
+
+                // Handle clicking an item in the "Add to List" dropdown
+                if (e.target.classList.contains('add-to-list-item')) {
+                    e.preventDefault();
+                    const id = e.target.dataset.id;
+                    const status = e.target.dataset.status;
+                    const showToAdd = JSON.parse(e.target.closest('.add-to-list-item').dataset.show);
+
+                    if (showToAdd) {
+                        // Check if the show is already in the user's list
+                        if (!animeData.some(a => a.id == showToAdd.id)) {
+                            showToAdd.status = status;
+                            showToAdd.watched = 0; // Start with 0 watched episodes
+                            animeData.push(showToAdd);
+                            saveAnimeData();
+                        }
+                        closeModal(detailsModal);
+                        const targetTab = document.querySelector(`.tab-item[data-tab="${status}"]`);
+                        
+                        // Clear search input and restore view
+                        document.getElementById('search-input').value = '';
+
+                        if (targetTab) targetTab.click(); // Switch to the relevant tab
+                        renderAll();
+                    }
+                }
+
+                // Toggle for "Add to List" dropdown in details modal
+                const dropdownBtn = e.target.closest('.add-to-list-dropdown-btn');
+                if (dropdownBtn) {
+                    dropdownBtn.nextElementSibling.classList.toggle('hidden');
+                }
+
+                // Spoiler reveal
+                if (e.target.id === 'details-synopsis' && e.target.classList.contains('spoiler')) {
+                    e.target.classList.toggle('revealed');
+                }
+            });
+            document.body.addEventListener('click', (e) => {
+                // Spoiler reveal
+                if (e.target.id === 'details-synopsis' && e.target.classList.contains('spoiler')) {
+                    e.target.classList.toggle('revealed');
+                }
+
+                // Hide search bar if clicking outside
+                const searchContainer = document.getElementById('search-container');
+                if (!searchContainer.contains(e.target)) {
+                    document.getElementById('search-input-wrapper').style.maxWidth = '0px';
+                }
+
+            });
+
+            // --- API Integration for "Add New Show" ---
+            const showTitleInput = document.getElementById('show-title');
+            const searchResultsContainer = document.getElementById('search-results');
+            let searchTimeout;
+
+            // Function to fetch data from Jikan API
+            async function fetchAnimeFromAPI(query) {
+                if (query.length < 3) {
+                    searchResultsContainer.innerHTML = '';
+                    return;
+                }
+                try {
+                    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`);
+                    if (!response.ok) throw new Error(`API responded with ${response.status}`);
+                    const data = await response.json();
+                    displaySearchResults(data.data);
+                } catch (error) {
+                    console.error('Failed to fetch from Jikan API:', error);
+                    searchResultsContainer.innerHTML = `<div class="p-2 text-sm text-red-500">Error fetching results.</div>`;
+                }
+            }
+
+            // Function to display search results
+            function displaySearchResults(results) {
+                if (!results || results.length === 0) {
+                    searchResultsContainer.innerHTML = '';
+                    return;
+                }
+                const resultsHtml = results.map(anime => `
+                    <div class="search-result-item p-2 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50" 
+                         data-title="${anime.title}" 
+                         data-img="${anime.images?.jpg?.large_image_url || ''}"
+                         data-synopsis="${anime.synopsis || ''}"
+                         data-total="${anime.episodes || 0}"
+                         data-href="https://www.crunchyroll.com/search?q=${encodeURIComponent(anime.title)}">
+                        <img src="${anime.images?.jpg?.image_url}" class="w-10 h-14 object-cover rounded">
+                        <span class="text-sm">${anime.title}</span>
+                    </div>
+                `).join('');
+                searchResultsContainer.innerHTML = `<div class="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">${resultsHtml}</div>`;
+            }
+
+            // Event listener for the title input
+            showTitleInput.addEventListener('keyup', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value;
+                searchTimeout = setTimeout(() => {
+                    fetchAnimeFromAPI(query);
+                }, 300); // Debounce API calls
+            });
+
+            // Event listener for clicking a search result
+            searchResultsContainer.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-result-item');
+                if (item) {
+                    document.getElementById('show-title').value = item.dataset.title;
+                    document.getElementById('show-img-preview').src = item.dataset.img || `https://placehold.co/400x600/1F2937/E5E7EB?text=${encodeURIComponent(item.dataset.title)}`;
+                    document.getElementById('show-img-url').value = item.dataset.img;
+                    document.getElementById('total-episodes').value = item.dataset.total;
+                    document.getElementById('show-href').value = item.dataset.href;
+                    animeSynopsis[item.dataset.title] = item.dataset.synopsis; // Store synopsis
+                    searchResultsContainer.innerHTML = ''; // Clear results
+                }
+            });
+
+            // Update image preview when URL is pasted
+            document.getElementById('show-img-url').addEventListener('input', (e) => {
+                const url = e.target.value;
+                document.getElementById('show-img-preview').src = url || `https://placehold.co/400x600/1F2937/E5E7EB?text=...`;
+            });
+
+            const loginModal = document.getElementById('login-modal');
+             const signupModal = document.getElementById('signup-modal');
+
+            document.getElementById('login-btn').addEventListener('click', (e) => {
+                openModal(loginModal);
+            });
+
+            document.getElementById('close-login-modal-btn').addEventListener('click', () => closeModal(loginModal));
+            loginModal.addEventListener('click', (e) => e.target === loginModal && closeModal(loginModal));
+
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Here you would typically handle login logic, e.g., send data to a server
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                console.log('Login attempt:', { username, password });
+                alert('Login functionality is not fully implemented in this demo.');
+                closeModal(loginModal);
+            });
+            document.getElementById('signup-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('signup-username').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                // Password criteria
+                const uppercase = /[A-Z]/g;
+                const numbers = /[0-9]{2,}/g;
+                const symbols = /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/g;
+
+                if (!uppercase.test(password) || !numbers.test(password) || !symbols.test(password)) {
+                    alert('Password must contain at least one uppercase letter, two numbers, and one symbol.');
+                    return;
+                }
+                alert('Signup functionality is not fully implemented in this demo.');
+                closeModal(signupModal);
+            });
+
+            // Links to switch between login and signup modals
+            document.getElementById('go-to-signup').addEventListener('click', (e) => {
+                e.preventDefault();
+                closeModal(loginModal);
+                openModal(signupModal);
+            });
+            document.getElementById('go-to-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                closeModal(signupModal);
+                openModal(loginModal);
+            });
+            
+            // --- Footer Feedback Form Logic ---
+            const footerFeedbackForm = document.getElementById('footer-feedback-form');
+            footerFeedbackForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                alert('Thank you for your feedback!'); // Placeholder action
+                footerFeedbackForm.reset();
+            });
+            // --- Sticky Header and Tabs Functionality ---
+            const header = document.querySelector('header');
+            const mainTabsWrapper = document.getElementById('main-tabs-wrapper');
+            const mainTabsContainer = document.getElementById('main-tabs-container');
+            const stickyTabsContainer = document.getElementById('sticky-tabs-container');
+            const stickyAddBtnContainer = document.getElementById('sticky-add-btn-container');
+            const searchInputWrapper = document.getElementById('search-input-wrapper');
+            const searchIconBtn = document.getElementById('search-icon-btn');
+            const searchInput = document.getElementById('search-input');
+
+
+            // Clone the tabs and add button for the sticky header
+            const tabsNav = mainTabsContainer.querySelector('nav').cloneNode(true);
+            tabsNav.classList.add('overflow-x-auto', 'mobile-tab-nav'); // Make tabs scrollable if they overflow
+            const addBtn = mainTabsContainer.querySelector('#add-show-btn').cloneNode(true);
+            addBtn.id = 'sticky-add-show-btn'; // Give it a new ID
+
+            // --- User Request: Modify the cloned button to be just a "+" icon ---
+            const addBtnText = addBtn.querySelector('span');
+            if (addBtnText) addBtnText.remove(); // Remove the "Add to list" text
+            addBtn.classList.remove('pl-3', 'pr-4', 'gap-2'); // Remove original padding and gap
+            addBtn.classList.add('w-8', 'h-8', 'p-0'); // Make it a fixed size circle
+            // --- End of modification ---
+
+            stickyTabsContainer.appendChild(tabsNav);
+            stickyAddBtnContainer.appendChild(addBtn);
+
+            // --- FIX: Add event listener to the cloned "+" button ---
+            const stickyAddButton = document.getElementById('sticky-add-show-btn');
+            if (stickyAddButton) {
+                stickyAddButton.addEventListener('click', () => {
+                    // This logic is the same as the original 'add-show-btn'
+                    document.getElementById('modal-title').textContent = 'Add to a list';
+                    document.getElementById('show-form').reset();
+                    openModal(document.getElementById('show-modal'));
+                });
+            }
+
+            // Sync clicks between original and cloned tabs
+            const allTabs = document.querySelectorAll('.tab-item');
+            tabsNav.querySelectorAll('.tab-item').forEach(tab => { // Only target cloned tabs
+                tab.addEventListener('click', (e) => {
+                    const tabId = e.currentTarget.dataset.tab;
+                    // Find corresponding tabs (original and clone) and sync their active state
+                    document.querySelectorAll(`.tab-item[data-tab="${tabId}"]`).forEach(t => {
+                        document.querySelectorAll('.tab-item').forEach(innerT => {
+                            innerT.classList.remove('active-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                            innerT.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/50');
+                        });
+                        t.classList.add('active-tab', 'bg-white', 'dark:bg-gray-900', 'text-rose-600');
+                        t.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/50');
+                    });
+                });
+            });
+
+            // Handle scroll to toggle sticky state
+            window.addEventListener('scroll', () => {
+                const isScrolled = window.scrollY > mainTabsWrapper.offsetTop;
+                if (isScrolled) {
+                    mainTabsContainer.style.opacity = '0'; // Hide original tabs
+                    stickyTabsContainer.classList.remove('opacity-0');
+                    stickyTabsContainer.style.maxHeight = '100px';
+                } else {
+                    mainTabsContainer.style.opacity = '1';
+                    stickyTabsContainer.classList.add('opacity-0');
+                    stickyTabsContainer.style.maxHeight = '0'; // Collapse sticky container
+                }
+            });
+
+            // Handle clicking the search icon to expand the search bar
+            searchIconBtn.addEventListener('click', () => {
+                searchInputWrapper.style.maxWidth = searchInputWrapper.style.maxWidth === '0px' ? '250px' : '0px';
+                if (searchInputWrapper.style.maxWidth !== '0px') {
+                    searchInput.focus();
+                }
+            });
+
+            // --- User Request: Add various animations to the logo ---
+            const logoLink = document.getElementById('logo-link');
+            if (logoLink) {
+                const animations = [
+                    ['hover:scale-105', 'hover:-rotate-3'],      // Original tilt
+                    ['hover:scale-110', 'hover:rotate-2'],       // Larger tilt
+                    ['hover:scale-105', 'hover:-translate-y-1'], // Gentle lift
+                    ['hover:scale-110'],                         // Simple zoom
+                    ['hover:rotate-3', 'hover:scale-105']        // Opposite tilt
+                ];
+
+                // Pick a random animation set on page load
+                const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+                
+                logoLink.classList.add(...randomAnimation);
+            }
+
+            // Initial Render
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
